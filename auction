@@ -36,7 +36,7 @@ contract Auction{
         startBlock = block.number;
         // 40320 blocks created in a week
         // endBlock = startBlock + 40320;
-        endBlock = startBlock + 3;
+        endBlock = startBlock + 4;
         ipfsHash = "";
         // bidIncrement = 100 
         bidIncrement = 1000000000000000000; // 1eth
