@@ -44,8 +44,8 @@ contract Auction{
         // block => global variable
         startBlock = block.number;
         // 40320 blocks created in a week
-        // endBlock = startBlock + 40320;
-        endBlock = startBlock + 4;
+        endBlock = startBlock + 40320;
+        // endBlock = startBlock + 4;
         ipfsHash = "";
         // bidIncrement = 100 
         bidIncrement = 1000000000000000000; // 1eth
@@ -149,5 +149,9 @@ contract Auction{
         // resetting the bids value => can call finalize only once 
         bids[recipient] = 0;
         recipient.transfer(value); 
+    }
+
+    function getBalance() public view returns (uint){
+        return address(this).balance;
     }
 }
