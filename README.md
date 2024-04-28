@@ -2,7 +2,7 @@
 
 REMIX: https://remix.ethereum.org/#lang=en&optimize=false&runs=200&evmVersion=null&version=soljson-v0.8.25+commit.b61c2a91.js
 
-! NU TRECEM LA HTTP, PASTRAM HTTPS (PIERDEM MUNCA)
+! NU TRECEM LA HTTP, PASTRAM HTTPS (PIERDEM MUNCA): web3js
 
 Auction Smart Contract
 * Smart Contract for a Decentralized Auction like an eBay alternative;
