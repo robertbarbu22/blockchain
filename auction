@@ -35,9 +35,11 @@ contract Auction{
         // block => global variable
         startBlock = block.number;
         // 40320 blocks created in a week
-        endBlock = startBlock + 40320;
+        // endBlock = startBlock + 40320;
+        endBlock = startBlock + 3;
         ipfsHash = "";
-        bidIncrement = 100;
+        // bidIncrement = 100 
+        bidIncrement = 1000000000000000000; // 1eth
     }
 
     modifier notOwner(){
@@ -55,6 +57,11 @@ contract Auction{
         _;
     }
 
+    modifier onlyOwner(){
+        require(msg.sender == owner, "Only the owner can cancel the auction");
+        _;
+    }
+
     // pure does not alternate blockchain/ it doesn't read the blockchain
     function min(uint a, uint b) pure internal returns(uint){
         if(a <= b){
@@ -65,32 +72,71 @@ contract Auction{
         }
     }
 
+    function cancelAuction() public onlyOwner{
+        auctionState = State.Canceled;
+    }
+
     // the owner can t place a bid
     function placeBid() public payable afterStart beforeEnd notOwner{
 
-    // Check if the auction is running and bid value meets the minimum requirement
-    require(auctionState == State.Running, "Auction is not running");
-    require(msg.value >= 100, "Bid value must be at least 100 wei");
+        // Check if the auction is running and bid value meets the minimum requirement
+        require(auctionState == State.Running, "Auction is not running");
+        require(msg.value >= 100, "Bid value must be at least 100 wei");
 
-    // Ensure that the bid exceeds the current highest bid
-    uint currentBid = bids[msg.sender] + msg.value;
-    require(currentBid > highestBindingBid, "Bid must exceed current highest bid");
+        // Ensure that the bid exceeds the current highest bid
+        uint currentBid = bids[msg.sender] + msg.value;
+        require(currentBid > highestBindingBid, "Bid must exceed current highest bid");
 
-    // Update bidder's bid amount
-    bids[msg.sender] = currentBid;
+        // Update bidder's bid amount
+        bids[msg.sender] = currentBid;
 
-    // Update highest bid and bidder
-    if(currentBid <= bids[highestBidder]) {
-        highestBindingBid = min(currentBid + bidIncrement, bids[highestBidder]);
-    } else {
-        highestBindingBid = min(currentBid, bids[highestBidder] + bidIncrement);
-        highestBidder = payable(msg.sender);
+        // Update highest bid and bidder
+        if(currentBid <= bids[highestBidder]) {
+            highestBindingBid = min(currentBid + bidIncrement, bids[highestBidder]);
+        } else {
+            highestBindingBid = min(currentBid, bids[highestBidder] + bidIncrement);
+            highestBidder = payable(msg.sender);
+        }
+        
+        // Emit BidPlaced event
+        emit BidPlaced(msg.sender, msg.value, "Bid placed successfully");
     }
-    
-    // Emit BidPlaced event
-    emit BidPlaced(msg.sender, msg.value, "Bid placed successfully");
-}
 
+    function finalizeAuction() public {
+        // the auction ended
+        require(auctionState == State.Canceled || block.number > endBlock);
+        // owner or a bidder
+        require(msg.sender == owner || bids[msg.sender] > 0);
 
+        address payable recipient;  // the bidder who wants his money back
+        uint value;
 
+        // the auction was cancelled 
+        if(auctionState == State.Canceled){
+            // the bidders can request their money
+            recipient = payable(msg.sender);
+            value = bids[msg.sender];
+        }
+        // auction ended, not canceled
+        else{
+            // the owner will receive the highest bid
+            if(msg.sender == owner){
+                recipient = owner;
+                value = highestBindingBid;
+            }
+            // bidder will request their funds
+            else{
+                if(msg.sender == highestBidder){
+                    recipient = highestBidder;
+                    value = bids[highestBidder] - highestBindingBid;
+                }
+                // neither the owner/ highest bidder
+                else{
+                    recipient = payable(msg.sender);
+                    value = bids[msg.sender];
+                }
+            }
+        }  
+        recipient.transfer(value); 
+    }
 }
