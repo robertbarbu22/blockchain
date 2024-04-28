@@ -9,7 +9,18 @@ contract AuctionCreator{
         Auction newAuction = new Auction(msg.sender);
         auctions.push(newAuction); // the address of the externally owned account; the owner of the auction
     }
+
+    
+    function getAuctionsCount() public view returns (uint) {
+        return auctions.length;
+    }
+
+    function getAuctionBalance(uint index) public view returns (uint) {
+        require(index < auctions.length, "Invalid index");
+        return auctions[index].getBalance();
+    }
 }
+
 
 contract Auction{
 
@@ -151,7 +162,7 @@ contract Auction{
         recipient.transfer(value); 
     }
 
-    function getBalance() public view returns (uint){
+    function getBalance() external view returns (uint){
         return address(this).balance;
     }
 }
