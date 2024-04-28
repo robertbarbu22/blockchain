@@ -2,6 +2,15 @@
  
 pragma solidity >=0.5.0 <0.9.0;
 
+contract AuctionCreator{
+    Auction[] public auctions;
+
+    function createAuction() public{
+        Auction newAuction = new Auction(msg.sender);
+        auctions.push(newAuction); // the address of the externally owned account; the owner of the auction
+    }
+}
+
 contract Auction{
 
     // receive Eth; seen by everyone
@@ -28,8 +37,8 @@ contract Auction{
     event BidPlaced(address indexed bidder, uint amount, string message);
 
 
-    constructor(){
-        owner = payable(msg.sender);
+    constructor(address eoa){
+        owner = payable(eoa);
         auctionState = State.Running;
         // safer from spoofing ETH blocktime is 15s
         // block => global variable
@@ -137,6 +146,8 @@ contract Auction{
                 }
             }
         }  
+        // resetting the bids value => can call finalize only once 
+        bids[recipient] = 0;
         recipient.transfer(value); 
     }
 }
