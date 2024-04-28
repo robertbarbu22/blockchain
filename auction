@@ -1,0 +1,96 @@
+//SPDX-License-Identifier: GPL-3.0
+ 
+pragma solidity >=0.5.0 <0.9.0;
+
+contract Auction{
+
+    // receive Eth; seen by everyone
+    address payable public owner;
+    uint public startBlock;
+    uint public endBlock;
+    string public ipfsHash;
+
+    enum State {
+        Started, Running, Ended, Canceled
+    }
+    State public auctionState;
+
+    uint public highestBindingBid;
+    // the winner of the auction
+    address payable public highestBidder;
+
+    // bidders and the amount they bid
+    mapping(address => uint) public bids;
+
+    uint bidIncrement;
+
+     // BidPlaced event
+    event BidPlaced(address indexed bidder, uint amount, string message);
+
+
+    constructor(){
+        owner = payable(msg.sender);
+        auctionState = State.Running;
+        // safer from spoofing ETH blocktime is 15s
+        // block => global variable
+        startBlock = block.number;
+        // 40320 blocks created in a week
+        endBlock = startBlock + 40320;
+        ipfsHash = "";
+        bidIncrement = 100;
+    }
+
+    modifier notOwner(){
+        require(msg.sender != owner);
+        _;
+    }
+
+    modifier afterStart(){
+        require(block.number >= startBlock);
+        _;
+    }
+
+    modifier beforeEnd(){
+        require(block.number <= endBlock);
+        _;
+    }
+
+    // pure does not alternate blockchain/ it doesn't read the blockchain
+    function min(uint a, uint b) pure internal returns(uint){
+        if(a <= b){
+            return a;
+        }
+        else{
+            return b;
+        }
+    }
+
+    // the owner can t place a bid
+    function placeBid() public payable afterStart beforeEnd notOwner{
+
+    // Check if the auction is running and bid value meets the minimum requirement
+    require(auctionState == State.Running, "Auction is not running");
+    require(msg.value >= 100, "Bid value must be at least 100 wei");
+
+    // Ensure that the bid exceeds the current highest bid
+    uint currentBid = bids[msg.sender] + msg.value;
+    require(currentBid > highestBindingBid, "Bid must exceed current highest bid");
+
+    // Update bidder's bid amount
+    bids[msg.sender] = currentBid;
+
+    // Update highest bid and bidder
+    if(currentBid <= bids[highestBidder]) {
+        highestBindingBid = min(currentBid + bidIncrement, bids[highestBidder]);
+    } else {
+        highestBindingBid = min(currentBid, bids[highestBidder] + bidIncrement);
+        highestBidder = payable(msg.sender);
+    }
+    
+    // Emit BidPlaced event
+    emit BidPlaced(msg.sender, msg.value, "Bid placed successfully");
+}
+
+
+
+}
